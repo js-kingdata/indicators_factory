@@ -1,0 +1,12 @@
+.idea
+__pycache__
+.DS_Store
+.venv
+.env
+.env_bg
+venv
+
+crawlers/debug.py
+extern/*
+!extern/.gitkeep
+.python-version
