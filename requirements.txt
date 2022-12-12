@@ -17,3 +17,4 @@ PyYAML==6.0
 typer==0.4.1
 orjson==3.6.7 
 pyOpenSSL==22.0.0
+jinja2==3.0.3
