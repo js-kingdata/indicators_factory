@@ -1,9 +1,8 @@
 import scrapy
 import re
 
-from crawlers.utils import SpiderBase, Tools
+from crawlers.utils import SpiderBase
 from crawlers.utils.group_alarm import catch_except
-from crawlers.utils.request_data import get_coin_markets
 
 
 def minimal_regularity(pattern, string):

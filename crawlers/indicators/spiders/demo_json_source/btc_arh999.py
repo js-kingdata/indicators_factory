@@ -1,6 +1,6 @@
 import scrapy
 
-from crawlers.utils import SpiderBase, Tools
+from crawlers.utils import SpiderBase
 from crawlers.utils.group_alarm import catch_except
 
 
