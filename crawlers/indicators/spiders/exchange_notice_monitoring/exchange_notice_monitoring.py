@@ -11,7 +11,6 @@ from crawlers.utils.group_alarm import catch_except
 from jinja2 import Template
 from crawlers.utils.redis_conn import rds
 
-
 class ExchangeNoticeMonitoring(SpiderBase):
     name = 'exchange_notice_monitoring'
     exchange_name = 'Binance'
