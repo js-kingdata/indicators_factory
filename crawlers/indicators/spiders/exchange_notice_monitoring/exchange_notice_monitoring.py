@@ -83,6 +83,7 @@ class ExchangeNoticeMonitoring(SpiderBase):
 
         print(template)
         # Tools.multilingual_information_flow_push(
+        #     tmp_name='exchange_notice',
         #     template_id=template['template_id'],
         #     origin_url=template['origin_url'],
         #     params=template['params']

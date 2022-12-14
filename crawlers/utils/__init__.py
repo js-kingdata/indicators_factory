@@ -57,7 +57,7 @@ class Tools:
         return round(((v2 - v1) / v1) * times, ndigits)
 
     @classmethod
-    def multilingual_information_flow_push(cls, template_id: int, params: dict, origin_url: str = '',
+    def multilingual_information_flow_push(cls, tmp_name: str, params: dict, template_id: int, origin_url: str = '',
                                            image_urls: list = None, active=None):
         """
         信息流推送
@@ -86,7 +86,7 @@ class Tools:
         )
         start = (response.status_code == 200)
         information_flow_synchronization(
-            tmp_name='exchange_notice',
+            tmp_name=tmp_name,
             chart_id=template_id,
             params=params,
             origin_url=origin_url,
