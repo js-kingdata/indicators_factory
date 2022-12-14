@@ -42,7 +42,7 @@ class ExchangeNoticeMonitoring(SpiderBase):
             yesterday_end_time = (int(time.mktime(time.strptime(str(today), '%Y-%m-%d'))) - 1)
 
             for announcement in announcement_group['articles']:
-                if added_id_check(self.exchange_name, announcement['id']):
+                if added_id_check(self.name, self.exchange_name, str(announcement['id']), 60 * 60 * 24 * 2):
                     continue
                 if not (yesterday_start_time <= announcement['releaseDate'] // 1000 <= yesterday_end_time):
                     continue
@@ -78,8 +78,8 @@ class ExchangeNoticeMonitoring(SpiderBase):
             origin_url=response.url
         )
         # 渲染输出, 替换成推送
-        print(Template(self.alert_cn_template()).render(template['cn']))
-        print(Template(self.alert_en_template()).render(template['en']))
+        print(Template(self.alert_cn_template()).render(template['params']['cn']))
+        print(Template(self.alert_en_template()).render(template['params']['en']))
 
         print(template)
         # Tools.multilingual_information_flow_push(
