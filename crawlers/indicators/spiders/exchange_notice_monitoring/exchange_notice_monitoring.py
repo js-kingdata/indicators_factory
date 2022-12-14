@@ -1,6 +1,6 @@
 import json
 
-from crawlers.indicators.spiders.exchange_notice_monitoring import announcement_push
+from crawlers.indicators.spiders.exchange_notice_monitoring import announcement_push, added_id_check
 from crawlers.utils import SpiderBase, Tools
 from zhconv import convert
 import scrapy
@@ -43,8 +43,8 @@ class ExchangeNoticeMonitoring(SpiderBase):
             yesterday_end_time = (int(time.mktime(time.strptime(str(today), '%Y-%m-%d'))) - 1)
 
             for announcement in announcement_group['articles']:
-                # if self.added_id_check(self.exchange_name, announcement['id']):
-                #     continue
+                if added_id_check(self.exchange_name, announcement['id']):
+                    continue
                 if not (yesterday_start_time <= announcement['releaseDate'] // 1000 <= yesterday_end_time):
                     continue
 
@@ -63,10 +63,6 @@ class ExchangeNoticeMonitoring(SpiderBase):
                     }
                 )
 
-    @rds.thing_lock('exchange_announcement')
-    def added_id_check(exchange_name, announcement_id):
-        key = f'exchange_announcement:{exchange_name}'
-        return rds.set_sismember_check(key, announcement_id)
 
     @catch_except
     def detail_page_analysis(self, response):
@@ -87,11 +83,11 @@ class ExchangeNoticeMonitoring(SpiderBase):
         print(Template(self.alert_en_template()).render(template['en']))
 
         print(template)
-        Tools.multilingual_information_flow_push(
-            template_id=template['template_id'],
-            origin_url=template['origin_url'],
-            params=template['params']
-        )
+        # Tools.multilingual_information_flow_push(
+        #     template_id=template['template_id'],
+        #     origin_url=template['origin_url'],
+        #     params=template['params']
+        # )
 
 
     def dictionary_analysis(self, dic, delimiter: str = '\n'):
