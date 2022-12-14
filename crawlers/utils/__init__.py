@@ -2,8 +2,7 @@ import arrow
 import requests
 import scrapy
 
-from crawlers.config import DEBUG, PROXY_URL, KD_INTERNAL_TOKEN, KD_INTERNAL_API
-from crawlers.utils.group_alarm import information_flow_synchronization
+from crawlers.config import DEBUG, PROXY_URL
 from crawlers.utils.redis_conn import rds
 
 
@@ -55,40 +54,3 @@ class Tools:
         :return:
         """
         return round(((v2 - v1) / v1) * times, ndigits)
-
-    @classmethod
-    def multilingual_information_flow_push(cls, tmp_name: str, params: dict, template_id: int, origin_url: str = '',
-                                           image_urls: list = None, active=None):
-        """
-        信息流推送
-        :param tmp_name: 模板名称
-        :param params: 模板参数
-        :param origin_url: 原文链接
-        :param image_urls: 图片链接
-        :param active: 已激活的语言类型
-        :return: None
-        """
-        start = False
-        print('指标 %s 发送预警内容：%s' % (template_id, params))
-        if active is None:
-            active = ['en', 'cn']
-        response = requests.post(
-            url=f'{KD_INTERNAL_API}/generic_post',
-            json={
-                'template_id': template_id,
-                'active_en': 'en' in active,
-                'active_cn': 'cn' in active,
-                'origin_url': origin_url,
-                'params': params,
-                'image_urls': image_urls,
-            },
-            headers={'Authorization': f'Token {KD_INTERNAL_TOKEN}'}
-        )
-        start = (response.status_code == 200)
-        information_flow_synchronization(
-            tmp_name=tmp_name,
-            chart_id=template_id,
-            params=params,
-            origin_url=origin_url,
-            start=start
-        )

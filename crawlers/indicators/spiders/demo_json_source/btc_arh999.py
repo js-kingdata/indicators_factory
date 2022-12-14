@@ -22,11 +22,6 @@ class BtcArh999Spider(SpiderBase):
         }
         print(Template(self.alert_en_template()).render(params))
         print(Template(self.alert_cn_template()).render(params))
-        # Tools.multilingual_information_flow_push(
-        #     tmp_name="BTC_ARH999",
-        #     params=params,
-        #     template_id=793
-        # )
 
     # must be declare
     def alert_en_template(self):
