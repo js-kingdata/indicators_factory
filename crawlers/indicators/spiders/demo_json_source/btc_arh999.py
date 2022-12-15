@@ -1,6 +1,9 @@
-import scrapy
+import json
 
-from crawlers.utils import SpiderBase, Tools
+import scrapy
+import time
+import datetime
+from crawlers.utils import SpiderBase, rds
 from crawlers.utils.group_alarm import catch_except
 from jinja2 import Template
 
@@ -20,9 +23,13 @@ class BtcArh999Spider(SpiderBase):
             'btc_price': data[-1]['value'],
             'change': round(((float(data[-1]['value']) - float(data[-2]['value'])) / float(data[-2]['value'])) * 100, 2)
         }
+        today_start_time = str(int(time.mktime(time.strptime(str(datetime.date.today()), '%Y-%m-%d'))) + 1)
+        value = rds.get(self.name, today_start_time)
+        if value is not None:
+            return
+        rds.set(self.name, today_start_time, json.dumps(params), 60 * 60 * 24 * 2)
         print(Template(self.alert_en_template()).render(params))
         print(Template(self.alert_cn_template()).render(params))
-
     # must be declare
     def alert_en_template(self):
         return """The current BTC ahr999 (AHR Index) is {{arh_999}}. This spot is theoretically unsuitable for bottom fishing or long-term fixed investment. The current price of BTC is {{btc_price}}, and 24H  change is {{change}}. (The above content does not constitute investment advice and is for your reference only. Invest at your own risk.)
