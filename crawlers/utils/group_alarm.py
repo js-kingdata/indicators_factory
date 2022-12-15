@@ -1,7 +1,6 @@
 import functools
 import traceback
-import time
-import requests
+from logging import DEBUG
 
 def catch_except(func):
     @functools.wraps(func)
@@ -13,3 +12,4 @@ def catch_except(func):
             if DEBUG:
                 print(error_info)
     return wrapper
+

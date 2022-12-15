@@ -1,5 +1,4 @@
 from environs import Env
-from urllib.parse import urljoin
 
 env = Env()
 

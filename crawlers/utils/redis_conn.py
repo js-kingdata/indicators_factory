@@ -1,9 +1,10 @@
+import logging
+
 import redis
 import time
 
 from crawlers.config import REDIS_URL
 from urllib.parse import urlparse
-
 
 _REDIS_URL = urlparse(REDIS_URL)
 
@@ -19,57 +20,45 @@ _redis_client = redis.Redis(connection_pool=pool)
 class rds:
 
     @classmethod
-    def get(cls, name):
-        """获取指定 [name] 的值"""
-        value = _redis_client.get(name)
+    def getex(cls, prefix, name):
+        """
+           Return the value at key ``prefix + ':' + name``, or None if the key doesn't exist
+           prefix: The prefix parameter indicates the name value of the current crawler
+           name: Customize the name value related to the current business
+        """
+        key = prefix + ':' + name
+
+        if len(key.encode()) > 1024:
+            logging.warning('Key is too large')
+            return None
+        value = _redis_client.get(prefix + name)
         if value:
             return str(value, encoding="utf-8")
         return value
 
     @classmethod
-    def set(cls, name, value, ttl: int = None):
-        _redis_client.set(name, value)
+    def setex(cls, prefix, name: str, value: str, ttl):
+        """
+           Return the value at key ``prefix + ':' + name``, or None if the key doesn't exist
+           prefix: The prefix parameter indicates the name value of the current crawler
+           name: Customize the name value related to the current business. The key string size cannot exceed 1KB
+           value: The stored value cannot exceed 128 KB
+           ttl: Expiration time must be set, and value must be taken according to business requirements
+        """
+        key = prefix + ':' + name
+        # Size limit, value cannot exceed 128 KB, key cannot exceed 1 KB
+        if len(value.encode()) > 1024 * 128 or len(key.encode()) > 1024:
+            logging.warning('Key or Value is too large')
+            return False
+
+        if _redis_client.get(key) is not None:
+            return False
+
         if ttl:
-            _redis_client.expire(name, ttl)
-
-    @classmethod
-    def hget(cls, name, key):
-        return _redis_client.hget(name, key)
-
-    @classmethod
-    def hset(cls, name, key, value):
-        return _redis_client.hset(name, key, value)
-
-    @classmethod
-    def srandmember(cls, name):
-        return _redis_client.srandmember(name, 1)
-
-    @classmethod
-    def set_sismember_check(cls, name, member):
-        if _redis_client.sismember(name, member):
-            return True
-        _redis_client.sadd(name, member)
-
-    @classmethod
-    def get_and_set_key(cls, name, value=time.time(), ttl: int = None):
-        if _redis_client.get(name):
-            return True
-        _redis_client.set(name, value)
-        if ttl:
-            _redis_client.expire(name, ttl)
-
-    @classmethod
-    def set_multi_member_chick(cls, name, multi_member: set, separator='"', ttl=None):
-        new_multi_member = set()
-        redis_data = _redis_client.get(name)
-        if redis_data:
-            old_multi_member = set(bytes.decode(redis_data).split('"'))
-            new_multi_member = multi_member - old_multi_member
-            multi_member |= old_multi_member
-        _redis_client.set(name, str(separator.join(multi_member)))
-        if ttl:
-            _redis_client.expire(name, ttl)
-        return new_multi_member
+            _redis_client.set(key, value, ex=ttl)
+        else:
+            _redis_client.set(key, value)
+        return True
 
     @classmethod
     def thing_lock(cls, name, expiration_time=2, time_out=3):
@@ -85,5 +74,7 @@ class rds:
                         return data
                     time.sleep(0.001)
                 return func(*args, **kwargs)
+
             return wrapper_func
+
         return outer_func
