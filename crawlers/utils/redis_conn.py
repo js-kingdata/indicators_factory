@@ -20,9 +20,15 @@ _redis_client = redis.Redis(connection_pool=pool)
 class rds:
 
     @classmethod
-    def get(cls, prefix, name):
-        """获取指定 [name] 的值"""
-        if len((prefix + name).encode()) > 1024:
+    def getex(cls, prefix, name):
+        """
+           Return the value at key ``prefix + ':' + name``, or None if the key doesn't exist
+           prefix: The prefix parameter indicates the name value of the current crawler
+           name: Customize the name value related to the current business
+        """
+        key = prefix + ':' + name
+
+        if len(key.encode()) > 1024:
             logging.warning('Key is too large')
             return None
         value = _redis_client.get(prefix + name)
@@ -31,15 +37,28 @@ class rds:
         return value
 
     @classmethod
-    def set(cls, prefix: str, name: str, value: str, ttl):
-        # 大小限制，value 不能超过 128 KB, key 不能超过 1 KB
-        if len(value.encode()) > 1024 * 128 or len((prefix + name).encode()) > 1024:
+    def setex(cls, prefix, name: str, value: str, ttl):
+        """
+           Return the value at key ``prefix + ':' + name``, or None if the key doesn't exist
+           prefix: The prefix parameter indicates the name value of the current crawler
+           name: Customize the name value related to the current business. The key string size cannot exceed 1KB
+           value: The stored value cannot exceed 128 KB
+           ttl: Expiration time must be set, and value must be taken according to business requirements
+        """
+        key = prefix + ':' + name
+        # Size limit, value cannot exceed 128 KB, key cannot exceed 1 KB
+        if len(value.encode()) > 1024 * 128 or len(key.encode()) > 1024:
             logging.warning('Key or Value is too large')
-            return True
+            return False
 
-        _redis_client.set(prefix + name, value)
+        if _redis_client.get(key) is not None:
+            return False
+
         if ttl:
-            _redis_client.expire(prefix + name, ttl)
+            _redis_client.set(key, value, ex=ttl)
+        else:
+            _redis_client.set(key, value)
+        return True
 
     @classmethod
     def thing_lock(cls, name, expiration_time=2, time_out=3):

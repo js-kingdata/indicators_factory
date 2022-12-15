@@ -24,10 +24,10 @@ class BtcArh999Spider(SpiderBase):
             'change': round(((float(data[-1]['value']) - float(data[-2]['value'])) / float(data[-2]['value'])) * 100, 2)
         }
         today_start_time = str(int(time.mktime(time.strptime(str(datetime.date.today()), '%Y-%m-%d'))) + 1)
-        value = rds.get(self.name, today_start_time)
+        value = rds.getex(self.name, today_start_time)
         if value is not None:
             return
-        rds.set(self.name, today_start_time, json.dumps(params), 60 * 60 * 24 * 2)
+        rds.setex(self.name, today_start_time, json.dumps(params), 60 * 60 * 24 * 2)
         print(Template(self.alert_en_template()).render(params))
         print(Template(self.alert_cn_template()).render(params))
     # must be declare
