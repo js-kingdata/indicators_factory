@@ -1,12 +1,9 @@
-import requests
-
 from crawlers.utils import SpiderBase
 from jinja2 import Template
+from crawlers.utils.group_alarm import catch_except
 
 
-def get_coin_info(coin):
-    response = requests.get(url=f'https://fapi.coinglass.com/api/futures/longShortRate?symbol={coin}&timeType=3')
-    data = response.json()['data'][0]
+def build_coin_info(data):
     return {
         'symbol': data['symbol'],
         'long_short_rate': round(data['longRate'] / data['shortRate'], 2),
@@ -21,15 +18,18 @@ def get_coin_info(coin):
 
 
 class ContractPositionRatio(SpiderBase):
-    def parse(self, response, **kwargs):
-        pass
-
     name = 'idx-contract-position-ratio'
-    all_coin = ['BTC']
 
-    def start_requests(self):
+    start_urls = [
+        'https://fapi.coinglass.com/api/futures/longShortRate?symbol=BTC&timeType=3',
+        'https://fapi.coinglass.com/api/futures/longShortRate?symbol=ETH&timeType=3'
+    ]
+
+    @catch_except
+    def parse(self, response, **kwargs):
+        data = response.json()['data'][0]
         params = {
-            'info': [get_coin_info(coin) for coin in self.all_coin]
+            'info': [build_coin_info(data)]
         }
         print(Template(self.alert_en_template()).render(params))
         print(Template(self.alert_cn_template()).render(params))
