@@ -29,15 +29,15 @@ BTC rises and falls by more than 7% and broadcasts the liquidation data.
 
 ## Indicator Alert Demo (Required)
 EN:
-According to KingData monitoring, In the past 4 hours, BTC Long/Short Ratio across network is 0.67, with 39.99% longs and  60.01% shorts. Shorts outweigh Longs.
-Among leading exchanges:
-Binance: long 41.21%, short 58.79%
-OKX: long 38.17%, short 61.83%
-Bitget: long 45.42%, short 54.58%
+According to KingData monitoring, In the past 4 hours, BTC Long/Short Ratio across network is 0.67, with 39.99% longs and  60.01% shorts. Shorts outweigh Longs.   
+Among leading exchanges:   
+Binance: long 41.21%, short 58.79%   
+OKX: long 38.17%, short 61.83%   
+Bitget: long 45.42%, short 54.58%      
 
 CN:
-据 KingData 数据监控，最近4小时，BTC全网合约多空比为 0.67，多单占比 39.99%，空单占比60.01%，看空人数大于看多人数。
-其中主流交易所：
-Binance：做多41.21% 做空58.79%
-OKX：做多38.17% 做空61.83%
-Bitget：做多45.42% 做空54.58%
+据 KingData 数据监控，最近4小时，BTC全网合约多空比为 0.67，多单占比 39.99%，空单占比60.01%，看空人数大于看多人数。    
+其中主流交易所：   
+Binance：做多41.21% 做空58.79%   
+OKX：做多38.17% 做空61.83%   
+Bitget：做多45.42% 做空54.58%   
