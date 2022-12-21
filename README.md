@@ -35,9 +35,9 @@ Steps to develop indicators on KingData:
 
 See [Attention && FAQ](https://open.kingdata.com/attention-and-and-faq)
 
-## More info
+## Indicator Development Tutorial
 
 See [KingData Open Platform](https://open.kingdata.com/)
 
-## Contract us
+## Indicator Development Progress
 Join [KingData Dework](https://app.dework.xyz/kingdata-17178)

@@ -31,7 +31,7 @@ class rds:
         if len(key.encode()) > 1024:
             logging.warning('Key is too large')
             return None
-        value = _redis_client.get(prefix + name)
+        value = _redis_client.get(key)
         if value:
             return str(value, encoding="utf-8")
         return value
@@ -61,7 +61,32 @@ class rds:
         return True
 
     @classmethod
+    def get_and_set_key(cls, prefix, name: str, value: str, ttl: int = None):
+        """
+            Return the value at key ``prefix + ':' + name``, or True if the key exist
+            prefix: The prefix parameter indicates the name value of the current crawler
+            name: Customize the name value related to the current business. The key string size cannot exceed 1KB
+            value: The stored value cannot exceed 128 KB
+            ttl: Expiration time must be set, and value must be taken according to business requirements
+         """
+        key = prefix + ':' + name
+        # Size limit, value cannot exceed 128 KB, key cannot exceed 1 KB
+        if len(value.encode()) > 1024 * 128 or len(key.encode()) > 1024:
+            logging.warning('Key or Value is too large')
+            return False
+
+        if _redis_client.get(name):
+            return True
+        _redis_client.set(name, value)
+        if ttl:
+            _redis_client.expire(name, ttl)
+
+    @classmethod
     def thing_lock(cls, name, expiration_time=2, time_out=3):
+        """
+        code pessimistic locking
+        Function: Avoid simultaneous execution of functions, resulting in unpredictable problems
+        """
         def outer_func(func):
             def wrapper_func(*args, **kwargs):
                 lock_name = f'lock:{name}'
