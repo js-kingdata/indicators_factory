@@ -36,27 +36,37 @@ https://defillama.com/chains
 
 and
 
-2、TVL 7d changes > 80%(up or down)
+2、TVL 1d change > 20%(up or down) or TVL 7d changes > 50%(up or down) or TVL 7d changes > 100%(up or down)
 
 ## Indicator Alert Demo (Required)
 
 EN
 
-According to KingData monitoring, the projects whose TVL fluctuated by more than 80% in the past 7 days:
+```
+According to KingData monitoring, in the past {{interval}} days, {{project_name}}'s TVL {{% if interval_change > 0%}} increased {{% else %}} decreased {{% endif %}} {{ interval_change }}%.   
 
-Coinwind: TVL: $2B(7d: +90%)
-
-MDEX: TVL: $2B(7d: +90%)
-
-Iswap: TVL: $2B(7d: -80%)
+Project name: {{ project_name }}    
+Category: {{ category }}   
+Token: {{ symbol }}    
+Official Website: {{ url }}   
+Current TVL: {{ tvl }}   
+TVL(24H%): {{ change_1d }}%   
+TVL(7D%): {{ change_7d }}%   
+TVL(30D%): {{ change_30d }}%   
+```
 
 CN
 
-据 KingData 监控，过去 7天 TVL 波动超过 80% 的项目有
+```
+据 KingData 监控，过去 {{interval}} 天, {{project_name}} 的 TVL {{% if interval_change > 0%}}上涨{{% else %}}下跌{{% endif %}} {{ interval_change }}%。   
 
-Coinwind: TVL: $2B(7d: +90%)
-
-MDEX: TVL: $2B(7d: +90%)
-
-Iswap: TVL: $2B(7d: -80%)
+项目名称: {{ project_name }}   
+项目类别: {{ category }}   
+Token: {{ symbol }}   
+官网链接: {{ url }}  
+当前 TVL: {{ tvl }}    
+TVL(24H%): {{ change_1d }}   
+TVL(7D%): {{ change_7d }}   
+TVL(30D%): {{ change_30d }}  
+```
 
