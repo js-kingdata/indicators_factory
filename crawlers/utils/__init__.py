@@ -14,6 +14,9 @@ class SpiderBase(scrapy.Spider):
 
     def get_curent_price(self, coin, is_with_change_percent = False):
         data = requests.get(url=f'https://api.binance.com/api/v3/ticker/24hr?symbol={coin.upper()}USDT').json()
+        if not data['lastPrice']:
+            return False
+
         if is_with_change_percent:
             return {
                 'current_price': float(data['lastPrice']),
