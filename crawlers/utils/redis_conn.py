@@ -51,9 +51,6 @@ class rds:
             logging.warning('Key or Value is too large')
             return False
 
-        if _redis_client.get(key) is not None:
-            return False
-
         if ttl:
             _redis_client.set(key, value, ex=ttl)
         else:
