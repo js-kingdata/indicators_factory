@@ -12,6 +12,7 @@ from crawlers.utils import SpiderBase, rds
 from jinja2 import Template
 from crawlers.utils.group_alarm import catch_except
 import time
+from crawlers.utils.humanize import humanize_float_en
 
 class ETH_Supply(SpiderBase):
     name = 'eth_supply'
@@ -25,7 +26,7 @@ class ETH_Supply(SpiderBase):
             return
         else :
             self.process(data)
-    
+
     def process(self, data):
         circulation_amount = int(data['d1']['to_supply']) / 10 ** 18
         change_amount = int(data['d1']['change']) / 10 ** 18
@@ -55,8 +56,9 @@ class ETH_Supply(SpiderBase):
                 consecutive_day += 1
             consecutive_state = 'deflation'
 
-        rds.setex(self.name, 'consecutive_state', consecutive_state, 60 * 60 * 24)
-        rds.setex(self.name, 'consecutive_day', str(consecutive_day), 60 * 60 * 24)
+        # 按照你这个逻辑，这个key 就不能让他失效，应该一直存在才行
+        rds.setex(self.name, 'consecutive_state', consecutive_state)
+        rds.setex(self.name, 'consecutive_day', str(consecutive_day))
 
         consecutive_state_cn, consecutive_state_en = self.consecutive_state_func(consecutive_state, str(consecutive_day))
 
@@ -66,7 +68,7 @@ class ETH_Supply(SpiderBase):
             'inflation_state_en': inflation_state_en,
             'consecutive_state_cn': consecutive_state_cn,
             'consecutive_state_en': consecutive_state_en,
-            'circulation_amount': format(float('%.2f' % circulation_amount), ','),
+            'circulation_amount': humanize_float_en(round(circulation_amount, 2)),
             'change_amount': format(float('%.2f' % change_amount), ','),
             'change_action_cn': change_action_cn,
             'change_action_en': change_action_en
@@ -82,7 +84,7 @@ class ETH_Supply(SpiderBase):
             return day+' 日通缩', 'deflation for ' + day
 
     def alert_en_template(self):
-        return "According to KingData monitoring, the annualized growth rate of ETH yesterday was {{inflation_rate}} ({{inflation_state_en}}). It has been {{consecutive_state_en}} consecutive days. Approximately {{change_amount}} were {{change_action_en}} yesterday, current total circulation amount is {{circulation_amount}}."
-    
+        return "According to KingData monitoring, the annualized growth rate of ETH yesterday was {{inflation_rate}} ({{inflation_state_en}}). It has been {{consecutive_state_en}} consecutive days. Approximately {{change_amount}}ETH were {{change_action_en}} yesterday, current total circulation amount is {{circulation_amount}}ETH."
+
     def alert_cn_template(self):
-        return "据 KingData 监控，昨日 ETH 年化增长率为 {{inflation_rate}}（{{inflation_state_cn}}）。已连续 {{consecutive_state_cn}}。昨日共{{change_action_cn}}约：{{change_amount}}， 当前流通总量为：{{circulation_amount}}。"
+        return "据 KingData 监控，昨日 ETH 年化增长率为 {{inflation_rate}}（{{inflation_state_cn}}）。已连续 {{consecutive_state_cn}}。昨日共{{change_action_cn}}约：{{change_amount}} 枚ETH， 当前流通总量为：{{circulation_amount}} 枚ETH。"

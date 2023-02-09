@@ -37,7 +37,7 @@ class rds:
         return value
 
     @classmethod
-    def setex(cls, prefix, name: str, value: str, ttl):
+    def setex(cls, prefix, name: str, value: str, ttl: int = None):
         """
            Return the value at key ``prefix + ':' + name``, or None if the key doesn't exist
            prefix: The prefix parameter indicates the name value of the current crawler
