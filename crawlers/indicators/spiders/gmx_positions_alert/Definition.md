@@ -27,7 +27,7 @@ Arbitrum
 
 ## Indicator Data Source (Optional)
 
-https://ultrasound.money/
+读取原生智能合约
 
 ## Indicator Alert Frequency (Required)
 

@@ -9,7 +9,7 @@ from jinja2 import Template
 from crawlers.utils.humanize import humanize_float_en
 
 
-class BtcArh999Spider(SpiderBase):
+class GmxSpider(SpiderBase):
     name = 'gmx_positions'
 
     arb_base_url = 'https://arb-mainnet.g.alchemy.com/v2/0S348eV1_NOus-eNlxalOiTz7RXRotXz'
@@ -34,9 +34,14 @@ class BtcArh999Spider(SpiderBase):
     def parse_first(self, response):
         block_number = response.json()['result']
         print(block_number)
-        pre_block_number = hex(int(rds.getex(self.name, 'block_number'), 16) + 1)
-        rds.setex(self.name, 'block_number', block_number, ttl=60 * 60 * 24 * 2)
 
+        pre_block_number = "0x3df6b6e" #rds.getex(self.name, 'block_number')
+        # rds.setex(self.name, 'block_number', block_number, ttl=60 * 60 * 24 * 2)
+
+        if not pre_block_number:
+            return
+
+        pre_block_number = hex(int(pre_block_number, 16) + 1)
         print(pre_block_number, block_number)
 
         for topic in self.filter_topics:
@@ -75,6 +80,7 @@ class BtcArh999Spider(SpiderBase):
                 log_name = 'liquidate_position'
         
             parse_result = self.parse_log_data(log_name, result['data'][2:])
+
             parse_result['size_usd'] =  humanize_float_en(parse_result['sizeDelta'] / (10 ** 30), 2)
             parse_result['price_usd'] =  round(parse_result['price'] / (10 ** 30), 2)
             parse_result['token_size'] = humanize_float_en(parse_result['sizeDelta'] / parse_result['price'], 2)
