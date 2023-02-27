@@ -12,8 +12,8 @@ class GetAddressTag:
 
     def get_tag_json(self):
         tag_json = {}
-        if self.tagType == 'cex' or self.tagType == 'user' :
-            folder_path = os.getcwd() + '/%s_address' % self.tagType
+        if self.tagType == 'cex' or self.tagType == 'whale' :
+            folder_path = f"{os.getcwd()}/address_tags/{self.tagType}"
             file_names = os.listdir(folder_path)
             for file_name in file_names : 
                 file_path = folder_path + '/' + file_name

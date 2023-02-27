@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*
 import time
 from crawlers.utils import SpiderBase
-from crawlers.utils.get_address_tag import GetAddressTag
-from crawlers.utils.redis_conn import rds
+from crawlers.address_tags.get_tag import GetAddressTag
 from crawlers.utils.group_alarm import catch_except
 import orjson
 from crawlers.utils.humanize import humanize_float_cn, humanize_float_en
@@ -23,7 +22,7 @@ class WhaleAlertSpider(SpiderBase):
         _get_cex_address_tag = GetAddressTag('cex')
         self.cex_address_tag = _get_cex_address_tag.get_tag_json()
 
-        _get_user_address_tag = GetAddressTag('user')
+        _get_user_address_tag = GetAddressTag('whale')
         self.user_address_tag = _get_user_address_tag.get_tag_json()
 
         ts = int(time.time()) - 20 * 60
@@ -42,7 +41,7 @@ class WhaleAlertSpider(SpiderBase):
             txes = body["transactions"]
             self.logger.info(f'本次抓取数量：{len(txes)}')
             for i in txes:
-                if not (i and i.get('from') and i.get('to')) :
+                if not (i and i.get('from') and i.get('from').get('owner') and i.get('to') and i.get('to').get('owner')):
                     return
                 else :
                     self.assign_address_tag(i, 'from')
@@ -59,35 +58,35 @@ class WhaleAlertSpider(SpiderBase):
 
                 # Filter intra-exchange transfers
                 if i['from']['owner_type'] == 'exchange' and i['to']['owner_type'] == 'exchange' and i['from']['owner'] == i['to']['owner']:
-                    print('Filter intra-exchange transfers')
+                    # print('Filter intra-exchange transfers')
                     continue
 
                 if i['from']['owner_type'] == 'exchange' or i['to']['owner_type'] == 'exchange' :
                     if i['symbol'] in ['btc', 'eth', 'usdt', 'usdc', 'busd']:
-                        print('bitcoin transfer must over 1,000, eth transfer must over 10,000, stablecoin must over 30,000,000',i['symbol'], i['amount'])
+                        # print('bitcoin transfer must over 1,000, eth transfer must over 10,000, stablecoin must over 30,000,000',i['symbol'], i['amount'])
                         if (i['symbol'] == 'btc' and i['amount'] < 1000) or (i['symbol'] == 'eth' and i['amount'] < 10000):
                             continue
-                        elif i['amount_usd'] < 10000000 :
+                        elif i['amount_usd'] < 30000000 :
                             continue
                     else:
-                        print('altcoin must over $5,000,000',i['symbol'], i['amount_usd'])
+                        # print('altcoin must over $1,000,000',i['symbol'], i['amount_usd'])
                         if i['amount_usd'] < 1000000 :
                             continue
                     print(Template(self.alert_exhange_transfer_en_template()).render(i))
                     print(Template(self.alert_exhange_transfer_cn_template()).render(i))
-                else :
-                    if i['symbol'] in ['btc', 'eth', 'usdt', 'usdc', 'busd']:
-                        print('bitcoin transfer must over 1,000, eth transfer must over 10,000, stablecoin must over 30,000,000',i['symbol'], i['amount'])
-                        if (i['symbol'] == 'btc' and i['amount'] < 1000) or (i['symbol'] == 'eth' and i['amount'] < 10000):
-                            continue
-                        elif i['amount_usd'] < 10000000 :
-                            continue
-                    else:
-                        print('altcoin must over $500,000',i['symbol'], i['amount_usd'])
-                        if i['amount_usd'] < 1000000 :
-                            continue
-                    print(Template(self.alert_whale_transfer_en_template()).render(i))
-                    print(Template(self.alert_whale_transfer_cn_template()).render(i))
+                # else :
+                #     if i['symbol'] in ['btc', 'eth', 'usdt', 'usdc', 'busd']:
+                #         # print('bitcoin transfer must over 1,000, eth transfer must over 10,000, stablecoin must over 30,000,000',i['symbol'], i['amount'])
+                #         if (i['symbol'] == 'btc' and i['amount'] < 1000) or (i['symbol'] == 'eth' and i['amount'] < 10000):
+                #             continue
+                #         elif i['amount_usd'] < 10000000 :
+                #             continue
+                #     else:
+                #         # print('altcoin must over $100,000',i['symbol'], i['amount_usd'])
+                #         if i['amount_usd'] < 1000000 :
+                #             continue
+                #     print(Template(self.alert_whale_transfer_en_template()).render(i))
+                #     print(Template(self.alert_whale_transfer_cn_template()).render(i))
 
                 # Avoid repeated notification
                 # if rds.getex(self.name, f'{self.redis_cache_cursor_key}:{i["hash"]}'):
@@ -99,19 +98,19 @@ class WhaleAlertSpider(SpiderBase):
     def assign_address_tag(self, tx_obj, to_or_from):
         if tx_obj[to_or_from]['owner_type'] == 'unknown':
             if tx_obj[to_or_from]['address'] in self.cex_address_tag :
-                if tx_obj['blockchain'] in self.cex_address_tag[tx_obj[to_or_from]['address']] :
+                if tx_obj['blockchain'] in self.cex_address_tag[tx_obj[to_or_from]['address']]:
                     tx_obj[to_or_from]['owner'] = self.cex_address_tag[tx_obj[to_or_from]['address']][tx_obj['blockchain']]
                     tx_obj[to_or_from]['owner_type'] = 'exchange'
                 else :
                     tx_obj[to_or_from]['owner'] == 'unknown'
             elif tx_obj[to_or_from]['address'] in self.user_address_tag :
-                if tx_obj['symbol'] in self.user_address_tag[tx_obj[to_or_from]['address']] :
+                if tx_obj['symbol'] in self.user_address_tag[tx_obj[to_or_from]['address']]:
                     tx_obj[to_or_from]['owner'] = self.user_address_tag[tx_obj[to_or_from]['address']][tx_obj['symbol']]
-                    tx_obj[to_or_from]['owner_type'] = 'whale_user'
+                    tx_obj[to_or_from]['owner_type'] = f"whale_user"
                 else :
                     tx_obj[to_or_from]['owner'] == 'unknown'
-        else :
-            tx_obj[to_or_from]['owner'] == 'unknown'
+        # else :
+        #     tx_obj[to_or_from]['owner'] == 'unknown'
 
     # exchange
     def alert_exhange_transfer_en_template(self):
@@ -139,7 +138,7 @@ According to KingData monitoring，{{amount_en}} #{{symbol | upper}} transferred
         blockchain = params['blockchain']
         hash = params['hash']
         if blockchain == 'bitcoin':
-            return f'https://btc.com/{hash}'
+            return f'https://explorer.btc.com/btc/transaction/{hash}'
         if blockchain == 'ethereum':
             return f'https://etherscan.io/tx/0x{hash}'
         if blockchain == 'ripple':
