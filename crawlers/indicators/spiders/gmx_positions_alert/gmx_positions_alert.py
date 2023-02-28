@@ -19,7 +19,7 @@ class GmxSpider(SpiderBase):
     decrease_position_topic = '0x93d75d64d1f84fc6f430a64fc578bdd4c1e090e90ea2d51773e626d19de56d30'
     increase_position_topic = '0x2fe68525253654c21998f35787a8d0f361905ef647c854092430ab65f2f15022'
     liquidate_position_topic = '0x2e1f85a64a2f22cf2f0c42584e7c919ed4abe8d53675cff0f62bf1e95a1c676f'
-    filter_topics = [increase_position_topic, increase_position_topic, liquidate_position_topic]
+    filter_topics = [increase_position_topic, decrease_position_topic, liquidate_position_topic]
 
     def start_requests(self):
         yield scrapy.Request(url=self.arb_base_url, method='POST', body=json.dumps({
@@ -36,8 +36,8 @@ class GmxSpider(SpiderBase):
         block_number = response.json()['result']
         print(block_number)
 
-        pre_block_number = "0x3df6b6e" #rds.getex(self.name, 'block_number')
-        # rds.setex(self.name, 'block_number', block_number, ttl=60 * 60 * 24 * 2)
+        pre_block_number = rds.getex(self.name, 'block_number')
+        rds.setex(self.name, 'block_number', block_number, ttl=60 * 60 * 24 * 2)
 
         if not pre_block_number:
             return
@@ -77,7 +77,7 @@ class GmxSpider(SpiderBase):
                 log_name = 'increase_position'
             elif result['topics'][0] == self.decrease_position_topic:
                 log_name = 'decrease_position'
-            elif log_name == self.liquidate_position_topic:
+            elif result['topics'][0] == self.liquidate_position_topic:
                 log_name = 'liquidate_position'
 
             parse_result = self.parse_log_data(log_name, result['data'][2:])
@@ -90,13 +90,11 @@ class GmxSpider(SpiderBase):
             parse_result['chain'] = 'Arbitrum'
 
             if parse_result['indexTokenName'] in ('LINK', 'UNI') and parse_result['sizeDelta'] / parse_result['price'] > 10000 : # LINK / UNI need position token size over 10,000
-                parse_result['from'] = self.get_account(parse_result['tx_hash'])
                 print(Template(self.alert_cn_template()).render(parse_result))
-                # print(Template(self.alert_en_template()).render(parse_result))
+                print(Template(self.alert_en_template()).render(parse_result))
             elif parse_result['sizeDelta'] / (10 ** 30) > 300000 : # BTC / ETH need position usd size over $300,000
-                parse_result['from'] = self.get_account(parse_result['tx_hash'])
                 print(Template(self.alert_cn_template()).render(parse_result))
-                # print(Template(self.alert_en_template()).render(parse_result))
+                print(Template(self.alert_en_template()).render(parse_result))
 
     # parse log function
     def get_token_name(self, address):
@@ -124,6 +122,8 @@ class GmxSpider(SpiderBase):
     def parse_log_data(self, log_name, data):
         if log_name == 'increase_position' or log_name == 'decrease_position':
             return {
+                'key': self.get_item_value(data, 0),
+                'account': '0x' + self.get_item_value(data, 1)[24:],
                 'collateralTokenName': self.get_token_name(self.get_item_value(data, 2)[24:]),
                 'indexTokenName': self.get_token_name(self.get_item_value(data, 3)[24:]),
                 'collateralDelta': int(self.get_item_value(data, 4), 16),
@@ -135,6 +135,8 @@ class GmxSpider(SpiderBase):
             }
         elif log_name == 'liquidate_position':
             return {
+                'key': self.get_item_value(data, 0),
+                'account': '0x' + self.get_item_value(data, 1)[24:],
                 'collateralTokenName': self.get_token_name(self.get_item_value(data, 2)[24:]),
                 'indexTokenName': self.get_token_name(self.get_item_value(data, 3)[24:]),
                 'isLong': int(self.get_item_value(data, 4)),
@@ -142,18 +144,6 @@ class GmxSpider(SpiderBase):
                 'collateralDelta': int(self.get_item_value(data, 6), 16),
                 'price': int(self.get_item_value(data, 9), 16),
             }
-
-    def get_account(self, hash):
-        result = requests.post(url=self.arb_base_url, data=json.dumps({
-            "id": 1,
-            "jsonrpc": "2.0",
-            "params": [hash],
-            "method": "eth_getTransactionByHash"
-        }), headers = {
-            "accept": "application/json",
-            "content-type": "application/json"
-        })
-        return result.json()['result']['from']
 
 
     # alert function
@@ -163,19 +153,19 @@ class GmxSpider(SpiderBase):
         据 KingData 监控，GMX 协议在 {{chain}} 上新开 {{token_size}} {{indexTokenName}}(${{size_usd}}) {% if isLong %}多{% else %}空{% endif %}单。   
         开仓价格：${{price_usd}}
         杠杆倍数：{{leverage}}x
-        开仓账户: {{from}}  
+        开仓账户: {{account}}  
         TX ID: https://arbiscan.io/tx/{{tx_hash}}
 
         {% elif  type == "decrease_position" %}
         据 KingData 监控，GMX 协议在 {{chain}} 上平仓 {{token_size}} {{indexTokenName}}(${{size_usd}}) {% if isLong %}多{% else %}空{% endif %}单。   
         平仓价格：${{price_usd}}
-        平仓账户: {{from}}                            
+        平仓账户: {{account}}                            
         TX ID: https://arbiscan.io/tx/{{tx_hash}}
 
         {% elif type == 'liquidate_position' %}
         据 KingData 监控，GMX 协议在 {{chain}} 链上 {{token_size}} {{indexTokenName}}(${{size_usd}}) {% if isLong %}多{% else %}空{% endif %}单被清算。
         清算价格：${{price_usd}}
-        清算账户: {{from}} 
+        清算账户: {{account}} 
         TX ID: https://arbiscan.io/tx/{{tx_hash}}
         {% endif %}
         '''
@@ -193,4 +183,6 @@ class GmxSpider(SpiderBase):
         Position size: {{token_size}} {{indexTokenName}}（${{size_usd}}）
         Liquidated Price: ${{price_usd}}
         {% endif %}
+        Account: {{account}}
+        TX ID: https://arbiscan.io/tx/{{tx_hash}}
         '''
