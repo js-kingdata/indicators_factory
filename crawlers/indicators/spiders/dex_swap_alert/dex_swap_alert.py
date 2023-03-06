@@ -4,6 +4,7 @@ import scrapy
 from crawlers.utils import SpiderBase, rds
 from jinja2 import Template
 from crawlers.utils.group_alarm import catch_except
+from crawlers.utils.humanize import humanize_float_en
 
 class DexSwapAlert(SpiderBase):
     name = 'dex_swap_alert'
@@ -37,6 +38,7 @@ class DexSwapAlert(SpiderBase):
                                                     blockNumber_lte: "%s"
                                                 }
                                             }
+                                            first: 1000
                                             orderBy: logIndex
                                             orderDirection: asc
                                         ) {
@@ -84,9 +86,10 @@ class DexSwapAlert(SpiderBase):
     @catch_except
     def parse_blockNum(self, response, **dex): # 获取最新 blockNum，结合本地存储 blockNum，不断获取新数据
         current_blockNum = response.json()['data']['swaps'][0]['transaction']['blockNumber']
-        pre_blockNum = rds.getex(self.name + dex['project_name'], 'blockNum')
+        pre_blockNum = '16768307' #rds.getex(self.name + dex['project_name'], 'blockNum')
+        # pre_blockNum = rds.getex(self.name + dex['project_name'], 'blockNum')
 
-        rds.setex(self.name + dex['project_name'], 'blockNum', current_blockNum, 60 * 60)
+        # rds.setex(self.name + dex['project_name'], 'blockNum', current_blockNum, 60 * 60)
 
         if not pre_blockNum:
             return
@@ -144,16 +147,23 @@ class DexSwapAlert(SpiderBase):
         for tx_id in swap_dic.keys() :
             if swap_dic[tx_id]['symbol0'] in self.binance_symbol_list:
                 swap_dic[tx_id]['value0'] = float(self.binance_symbol_list[swap_dic[tx_id]['symbol0']]) * float(swap_dic[tx_id]['amount0'])
+                swap_dic[tx_id]['symbol0_price'] = float(self.binance_symbol_list[swap_dic[tx_id]['symbol0']])
             else :
                 swap_dic[tx_id]['value0'] = 0
             
             if swap_dic[tx_id]['symbol1'] in self.binance_symbol_list:
                 swap_dic[tx_id]['value1'] = float(self.binance_symbol_list[swap_dic[tx_id]['symbol1']]) * float(swap_dic[tx_id]['amount1'])
+                swap_dic[tx_id]['symbol1_price'] = float(self.binance_symbol_list[swap_dic[tx_id]['symbol1']])
             else :
                 swap_dic[tx_id]['value1'] = 0
 
             # 取大值
             swap_dic[tx_id]['value'] = round(abs(swap_dic[tx_id]['value1']) if abs(swap_dic[tx_id]['value1']) > abs(swap_dic[tx_id]['value0']) else abs(swap_dic[tx_id]['value0']), 2)
+            swap_dic[tx_id]['origin_value0'] = abs(float(swap_dic[tx_id]['value0']))
+            swap_dic[tx_id]['value0'] = humanize_float_en(abs(float(swap_dic[tx_id]['value0'])))
+            swap_dic[tx_id]['origin_value1'] = abs(float(swap_dic[tx_id]['value1']))
+            swap_dic[tx_id]['value1'] = humanize_float_en(abs(float(swap_dic[tx_id]['value1'])))
+
 
         self.alert_process(swap_dic)
 
@@ -165,39 +175,41 @@ class DexSwapAlert(SpiderBase):
             if float(swap['amount0']) > 0 :
                 temp_amount = swap['amount0']
                 temp_symbol = swap['symbol0']
-                swap['amount0'] = abs(float(swap['amount1']))
+                temp_price = swap.get('symbol0_price')
+                swap['amount0'] = humanize_float_en(abs(float(swap['amount1'])))
                 swap['symbol0'] = swap['symbol1']
-                swap['amount1'] = temp_amount
+                swap['symbol0_price'] = swap.get('symbol1_price')
+                swap['amount1'] = float(temp_amount)
                 swap['symbol1'] = temp_symbol
+                swap['symbol1_price'] = temp_price
             else :
-                swap['amount0'] = abs(float(swap['amount0']))
-            
+                swap['amount0'] = humanize_float_en(abs(float(swap['amount0'])))
+
+            swap['amount1'] = humanize_float_en(abs(float(swap['amount1'])))
             # 根据交易类型做过滤
             if swap['trade_type'] == 'mainstream_coin_trade' and swap['value'] >= 1000000:
+                swap['value'] = humanize_float_en(swap['value'])
                 print(Template(self.alert_en_template()).render(swap))
                 print(Template(self.alert_cn_template()).render(swap))
             elif swap['trade_type'] == 'alt_coin_trade' and swap['value'] >= 100000:
+                swap['value'] = humanize_float_en(swap['value'])
                 print(Template(self.alert_en_template()).render(swap))
                 print(Template(self.alert_cn_template()).render(swap))
     
     def alert_en_template(self):
         return '''
-            According to KingData monitoring, large value swap occur on Ethereum
-            Platform: {{project_name}}
-            SwapIn Symbol/Amount: {{symbol0}} ｜ {{amount0}}
-            SwapOut Symbol/Amount: {{symbol1}} ｜ {{amount1}}
-            Swap Value: ${{value}}
-            User: {{sender}}
-            Tx Hash: {{tx_id}}
+            According to KingData monitoring, {{amount1}} {{symbol1}}{% if origin_value1 > 1 %}(${{value1}}){% endif %} has just been swaped into {{amount0}} {{symbol0}}{% if origin_value0 > 1 %}(${{value0}}){% endif %}.
+            Account: {{sender}}
+            Sell/Quantity/Price: {{symbol1}} ｜ {{amount1}} | {% if symbol1_price %}${{symbol1_price}}{% else %}-{% endif %}
+            Buy/Quantity/Price: {{symbol0}} ｜ {{amount0}} | {% if symbol0_price %}${{symbol0_price}}{% else %}-{% endif %}
+            TradingPlatform: {{project_name}}
         '''
     
     def alert_cn_template(self):
         return '''
-            据 KingData 监控，ETH 链上发生大额 Swap
-            交易平台：{{project_name}}
-            买入币种/数量：{{symbol0}} ｜ {{amount0}}
-            卖出币种/数量：{{symbol1}} ｜ {{amount1}}
-            交易价值：${{value}}
-            交易用户：{{sender}}
-            交易 Hash：{{tx_id}}
+            据 KingData 监控，刚刚 {{amount1}} {{symbol1}}{% if origin_value1 > 1 %}(${{value1}}){% endif %} 兑换成 {{amount0}} {{symbol0}}{% if origin_value0 > 1 %}(${{value0}}){% endif %}。
+            交易用户：{{sender}}            
+            卖出币种/数量/价格：{{symbol1}} ｜ {{amount1}} | {% if symbol1_price %}${{symbol1_price}}{% else %}-{% endif %}
+            买入币种/数量/价格：{{symbol0}} ｜ {{amount0}} | {% if symbol0_price %}${{symbol0_price}}{% else %}-{% endif %}
+            交易平台：{{project_name}}            
         '''
