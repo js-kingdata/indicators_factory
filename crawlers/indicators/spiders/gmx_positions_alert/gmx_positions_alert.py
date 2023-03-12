@@ -28,6 +28,7 @@ class GmxSpider(SpiderBase):
         print("--------------Closed-------------")
         for key in self.result_list.keys() :
             parse_result = self.result_list[key]
+            parse_result['realisedPnl_usd'] = parse_result['realisedPnl_usd'] - parse_result['fee_usd']
             if parse_result['indexTokenName'] in ('LINK', 'UNI') and parse_result['sizeDelta'] / parse_result['price'] > 100000 : # LINK / UNI need position token size over 10,000
                 print(Template(self.alert_cn_template()).render(parse_result))
                 print(Template(self.alert_en_template()).render(parse_result))
@@ -104,6 +105,7 @@ class GmxSpider(SpiderBase):
                 parse_result['tx_hash'] = result['transactionHash']
                 parse_result['size_usd'] =  humanize_float_en(parse_result['sizeDelta'] / (10 ** 30), 2)
                 parse_result['price_usd'] =  round(parse_result['price'] / (10 ** 30), 2)
+                parse_result['fee_usd'] = round(parse_result['fee'] / (10 ** 30), 2)
                 parse_result['token_size'] = humanize_float_en(parse_result['sizeDelta'] / parse_result['price'], 2)
                 if parse_result['collateralDelta'] != 0:
                     parse_result['leverage'] = humanize_float_en(parse_result['sizeDelta'] / parse_result['collateralDelta'], 1)
