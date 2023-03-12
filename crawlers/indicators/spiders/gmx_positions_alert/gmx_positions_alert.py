@@ -28,11 +28,13 @@ class GmxSpider(SpiderBase):
         print("--------------Closed-------------")
         for key in self.result_list.keys() :
             parse_result = self.result_list[key]
-            parse_result['realisedPnl_usd'] = parse_result['realisedPnl_usd'] - parse_result['fee_usd']
-            if parse_result['indexTokenName'] in ('LINK', 'UNI') and parse_result['sizeDelta'] / parse_result['price'] > 100000 : # LINK / UNI need position token size over 10,000
+            if "fee_usd" in parse_result:
+                parse_result['realisedPnl_usd'] = humanize_float_en(parse_result['realisedPnl_usd'] - parse_result['fee_usd'], 2)
+
+            if parse_result['indexTokenName'] in ('LINK', 'UNI') and parse_result['sizeDelta'] / parse_result['price'] > 1000 : # LINK / UNI need position token size over 10,000
                 print(Template(self.alert_cn_template()).render(parse_result))
                 print(Template(self.alert_en_template()).render(parse_result))
-            elif parse_result['sizeDelta'] / (10 ** 30) > 3000000 : # BTC / ETH need position usd size over $300,000
+            elif parse_result['sizeDelta'] / (10 ** 30) > 30000 : # BTC / ETH need position usd size over $300,000
                 print(Template(self.alert_cn_template()).render(parse_result))
                 print(Template(self.alert_en_template()).render(parse_result))
 
@@ -105,7 +107,8 @@ class GmxSpider(SpiderBase):
                 parse_result['tx_hash'] = result['transactionHash']
                 parse_result['size_usd'] =  humanize_float_en(parse_result['sizeDelta'] / (10 ** 30), 2)
                 parse_result['price_usd'] =  round(parse_result['price'] / (10 ** 30), 2)
-                parse_result['fee_usd'] = round(parse_result['fee'] / (10 ** 30), 2)
+                if 'fee' in parse_result.keys():
+                    parse_result['fee_usd'] = round(parse_result['fee'] / (10 ** 30), 2)
                 parse_result['token_size'] = humanize_float_en(parse_result['sizeDelta'] / parse_result['price'], 2)
                 if parse_result['collateralDelta'] != 0:
                     parse_result['leverage'] = humanize_float_en(parse_result['sizeDelta'] / parse_result['collateralDelta'], 1)
@@ -120,7 +123,7 @@ class GmxSpider(SpiderBase):
                 print("------------------" + log_name + "-----" + result['transactionHash'])
                 if parse_result['realisedPnl'] >= 2**255:
                     parse_result['realisedPnl'] -= 2**256
-                parse_result['realisedPnl_usd'] = humanize_float_en(parse_result['realisedPnl'] / (10 ** 30), 2)
+                parse_result['realisedPnl_usd'] = round(parse_result['realisedPnl'] / (10 ** 30), 2)
                 parse_result['avgPrice'] = parse_result['avgPrice']
                 parse_result['avgPrice_usd'] = round(parse_result['avgPrice'] / (10 ** 30), 2)
                 parse_result['total_size_usd'] = humanize_float_en(parse_result['total_size'] / (10 ** 30), 2)
