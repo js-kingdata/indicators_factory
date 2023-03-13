@@ -54,7 +54,7 @@ class DexSwapAlert(SpiderBase):
                                                 id
                                                 blockNumber
                                             }
-                                            sender
+                                            origin
                                         }
                                     }'''
                 }
@@ -89,8 +89,8 @@ class DexSwapAlert(SpiderBase):
         # pre_blockNum = rds.get(f"{self.name}:{dex['project_name']}:blockNum")
         # rds.set(f"{self.name}:{dex['project_name']}:blockNum", current_blockNum, 60 * 60)
 
-        pre_blockNum = 16809224
-        current_blockNum = 16809324
+        pre_blockNum = 16814041
+        current_blockNum = 16814042
 
         if not pre_blockNum:
             return
@@ -148,18 +148,18 @@ class DexSwapAlert(SpiderBase):
                     'amount0': swap['amount0'],
                     'symbol1': swap['token1']['symbol'],
                     'amount1': swap['amount1'],
-                    'sender': swap['sender'],
+                    'sender': swap['origin'],
                     'project_name': dex['project_name'],
                     'trade_type': trade_type,
                     'blockNumber': swap['transaction']['blockNumber']
                 }
             
-            filter_tag = swap['transaction']['blockNumber'] + '_' + swap['sender'] # 把同一个 blockNumber 里面，同一个 sender 执行了多笔交易的情况标记出来。这种不会是手动操作，肯定是调用了特殊合约 或者 批量发起
-            
-            if filter_tag in swap_filter_dic.keys() : # 增加一个过滤的 dic
-                swap_filter_dic[filter_tag] += 1
-            else :
-                swap_filter_dic[filter_tag] = 0
+                filter_tag = swap['transaction']['blockNumber'] + '_' + swap['origin'] # 把同一个 blockNumber 里面，同一个 sender 执行了多笔交易的情况标记出来。这种不会是手动操作，肯定是调用了特殊合约 或者 批量发起
+                
+                if filter_tag in swap_filter_dic.keys() : # 增加一个过滤的 dic
+                    swap_filter_dic[filter_tag] += 1
+                else :
+                    swap_filter_dic[filter_tag] = 0
 
         # swap 处理好之后，计算每个 swap 的 value
         for tx_id in swap_dic.keys() :
