@@ -103,6 +103,8 @@ class GmxSpider(SpiderBase):
 
             parse_result = self.parse_log_data(log_name, result['data'][2:])
 
+            unique_id = parse_result['key'] + '_' + result['blockNumber']
+
             if log_name in ('increase_position', 'decrease_position', 'liquidate_position') :
                 parse_result['tx_hash'] = result['transactionHash']
                 parse_result['size_usd'] =  humanize_float_en(parse_result['sizeDelta'] / (10 ** 30), 2)
@@ -113,12 +115,13 @@ class GmxSpider(SpiderBase):
                 if parse_result['collateralDelta'] != 0:
                     parse_result['leverage'] = humanize_float_en(parse_result['sizeDelta'] / parse_result['collateralDelta'], 1)
                 parse_result['chain'] = 'Arbitrum'
-                if parse_result['key'] in self.result_list.keys():
-                    self.result_list[parse_result['key']].update(parse_result)
+
+                if unique_id in self.result_list.keys():
+                    self.result_list[unique_id].update(parse_result)
                 else :
                     parse_result['avgPrice'] = parse_result['price']
                     parse_result['realisedPnl'] = 0
-                    self.result_list[parse_result['key']] = parse_result
+                    self.result_list[unique_id] = parse_result
             else :
                 print("------------------" + log_name + "-----" + result['transactionHash'])
                 if parse_result['realisedPnl'] >= 2**255:
@@ -129,10 +132,11 @@ class GmxSpider(SpiderBase):
                 parse_result['total_size_usd'] = humanize_float_en(parse_result['total_size'] / (10 ** 30), 2)
                 if parse_result['collateral'] != 0 :
                     parse_result['total_leverage'] = humanize_float_en(parse_result['total_size'] / parse_result['collateral'], 1)
-                if parse_result['key'] in self.result_list.keys():
-                    self.result_list[parse_result['key']].update(parse_result)
+                
+                if unique_id in self.result_list.keys():
+                    self.result_list[unique_id].update(parse_result)
                 else :
-                    self.result_list[parse_result['key']] = parse_result
+                    self.result_list[unique_id] = parse_result
 
     # parse log function
     def get_token_name(self, address):
