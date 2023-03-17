@@ -31,12 +31,14 @@ class GmxSpider(SpiderBase):
             if "fee_usd" in parse_result:
                 parse_result['realisedPnl_usd'] = humanize_float_en(parse_result['realisedPnl_usd'] - parse_result['fee_usd'], 2)
 
-            if parse_result['indexTokenName'] in ('LINK', 'UNI') and parse_result['sizeDelta'] / parse_result['price'] > 1000 : # LINK / UNI need position token size over 10,000
+            if parse_result['indexTokenName'] in ('LINK', 'UNI') and parse_result['sizeDelta'] / parse_result['price'] > 100000 :
                 print(Template(self.alert_cn_template()).render(parse_result))
                 print(Template(self.alert_en_template()).render(parse_result))
-            elif parse_result['sizeDelta'] / (10 ** 30) > 30000 : # BTC / ETH need position usd size over $300,000
+            elif parse_result['sizeDelta'] / (10 ** 30) > 3000000 : # BTC / ETH need position usd size over $300,000
                 print(Template(self.alert_cn_template()).render(parse_result))
                 print(Template(self.alert_en_template()).render(parse_result))
+                if parse_result['sizeDelta'] / (10 ** 30) > 10000000 : # if the order quota is particularly large, it could be notified globally
+                    print('--- Global Notification---')
 
     def start_requests(self):
         yield scrapy.Request(url=self.arb_base_url, method='POST', body=json.dumps({
