@@ -216,18 +216,24 @@ class DexSwapAlert(SpiderBase):
                 swap['amount1'] = float(swap['amount1'])
 
             # 根据交易类型做过滤
-            if swap['trade_type'] == 'mainstream_coin_trade' and swap['value'] >= 3000000:  # 3000000
+            if swap['trade_type'] == 'mainstream_coin_trade' and swap['value'] >= 2000000:  # 3000000
                 self.foramt_swap(swap)
                 # Tools.multilingual_information_flow_push(tmp_name='DEX_SWAP_TRACKER', params= swap, origin_url=f'https://etherscan.io/tx/{swap["tx_id"]}')
 
                 print(Template(self.alert_en_template()).render(swap))
                 print(Template(self.alert_cn_template()).render(swap))
-            elif swap['trade_type'] == 'alt_coin_trade' and swap['value'] >= 300000: #300000
+
+                if swap['value'] >= 10000000 :
+                    print('---- Global Notification ----')
+            elif swap['trade_type'] == 'alt_coin_trade' and swap['value'] >= 200000: #300000
                 self.foramt_swap(swap)
                 # Tools.multilingual_information_flow_push(tmp_name='DEX_SWAP_TRACKER', params= swap, origin_url=f'https://etherscan.io/tx/{swap["tx_id"]}')
 
                 print(Template(self.alert_en_template()).render(swap))
                 print(Template(self.alert_cn_template()).render(swap))
+
+                if swap['value'] >= 1000000 :
+                    print('---- Global Notification ----')
 
     def foramt_swap(self, params):
         params['origin_value0'] = abs(params.get('value0') or 0)
